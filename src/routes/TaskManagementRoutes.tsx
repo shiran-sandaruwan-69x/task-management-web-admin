@@ -1,3 +1,4 @@
+import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import AuthLayout from "@/auth/AuthLayout";
 import { lazy } from "react";
@@ -5,7 +6,8 @@ import ProtectedRoute from "@/routes/ProtectedRoute.tsx";
 
 const LoginForm = lazy(() => import("@/auth/LoginForm"));
 const AdminDashboard = lazy(() => import("../components/dashboard/AdminDashboard"));
-const UserDashboard = lazy(() => import("../components/dashboard/UserDashboard"));
+
+const UserTaskManagement = lazy(() => import('UserDashboard/UserDashboard'));
 
 function TaskManagementRoutes() {
     return (
@@ -32,7 +34,7 @@ function TaskManagementRoutes() {
                 path="/users/*"
                 element={
                     <ProtectedRoute requiredRole="user">
-                        <UserDashboard />
+                        <UserTaskManagement />
                     </ProtectedRoute>
                 }
             />

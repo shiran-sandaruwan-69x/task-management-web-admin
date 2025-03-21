@@ -31,7 +31,7 @@ const UserForm: React.FC<UserFormProps> = ({
                                                isEditing ,
                                            }) => {
     const [form] = Form.useForm();
-    const apiKey: string = import.meta.env.VITE_GOOGLE_API_KEY as string;
+    const apiKey: string = process.env.VITE_GOOGLE_API_KEY as string;
     const [address, setAddress] = useState<string>("");
     const [suggestions, setSuggestions] = useState<{ value: string }[]>([]);
 
