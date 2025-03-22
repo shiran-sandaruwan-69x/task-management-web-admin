@@ -28,7 +28,7 @@ module.exports = {
             index: "/index.html",
         },
     },
-    name: "top-nav",
+    name: "shell",
     module: {
         rules: [
             {

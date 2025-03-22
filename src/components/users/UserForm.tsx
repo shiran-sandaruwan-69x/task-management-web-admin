@@ -5,6 +5,9 @@ import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import axios from "axios";
 import {toast} from "react-toastify";
+import {CreateUserType, UserRolesType} from "@/components/users/user-types/UserTypes.ts";
+import {CommonErrorType} from "@/components/common-types/CommonTypes.ts";
+import {createUser} from "@/services/user-services/UserSerives.ts";
 
 const { Option } = Select;
 
@@ -22,6 +25,7 @@ interface UserFormProps {
     toggleModal:()=>void;
     user?: UserFormValues;
     isEditing?: boolean;
+    getAllTask:()=>void;
 }
 
 const UserForm: React.FC<UserFormProps> = ({
@@ -29,11 +33,18 @@ const UserForm: React.FC<UserFormProps> = ({
                                                toggleModal,
                                                user,
                                                isEditing ,
+                                               getAllTask
                                            }) => {
     const [form] = Form.useForm();
+    const [isLoading, setIsLoading] = useState(false);
     const apiKey: string = process.env.VITE_GOOGLE_API_KEY as string;
     const [address, setAddress] = useState<string>("");
     const [suggestions, setSuggestions] = useState<{ value: string }[]>([]);
+
+    const isUserRoles:UserRolesType[] = [
+        { id: "admin", name: "Admin" },
+        { id: "user", name: "User" }
+    ];
 
     // Fetch address suggestions from Google Places API
     const fetchAddressSuggestions = async (query: string) => {
@@ -59,7 +70,7 @@ const UserForm: React.FC<UserFormProps> = ({
             }));
             setSuggestions(formattedSuggestions);
         } catch (error) {
-            console.error("Error fetching address suggestions:", error);
+            toast.error('Error fetching google places api');
         }
     };
 
@@ -89,16 +100,34 @@ const UserForm: React.FC<UserFormProps> = ({
         form.setFieldsValue({ address: value });
     };
 
-    const handleSubmit = (values: UserFormValues) => {
-        toast.error('Internal server error');
-         form.resetFields();
+    // create user
+    const handleSubmit = async (values: CreateUserType) => {
+        try {
+            setIsLoading(true);
+            await createUser(values);
+            getAllTask();
+            toast.success('Created successfully!');
+            form.resetFields();
+            toggleModal();
+        }catch (error){
+            const isErrorResponse = (error: unknown): error is CommonErrorType => {
+                return typeof error === 'object' && error !== null && 'response' in error;
+            };
+            if (isErrorResponse(error) && error.response) {
+                toast.error(error?.response?.data?.message);
+            } else {
+                toast.error('Internal server error');
+            }
+        }finally {
+            setIsLoading(false);
+        }
     };
 
 
     return (
         <Modal
             title={isEditing ? "Edit User" : "Create New User"}
-            style={{ top: 20 }}
+            style={{ top: 10 }}
             open={isFormOpen}
             onCancel={toggleModal}
             footer={null}
@@ -107,11 +136,22 @@ const UserForm: React.FC<UserFormProps> = ({
             <Row>
                 <Col xs={24}>
                     <Form.Item
-                        label="Full Name"
-                        name="name"
-                        rules={[{ required: true, message: "Please enter the full name" }]}
+                        label="First Name"
+                        name="firstName"
+                        rules={[{ required: true, message: "Please enter the first name" }]}
                     >
-                        <Input prefix={<User size={18} />} placeholder="Enter full name" />
+                        <Input prefix={<User size={18} />} placeholder="Enter first name" />
+                    </Form.Item>
+                </Col>
+            </Row>
+            <Row>
+                <Col xs={24}>
+                    <Form.Item
+                        label="Last Name"
+                        name="lastName"
+                        rules={[{ required: true, message: "Please enter the last name" }]}
+                    >
+                        <Input prefix={<User size={18} />} placeholder="Enter last name" />
                     </Form.Item>
                 </Col>
             </Row>
@@ -120,7 +160,10 @@ const UserForm: React.FC<UserFormProps> = ({
                     <Form.Item
                         label="Email Address"
                         name="email"
-                        rules={[{ required: true, message: "Please enter a valid email" }]}
+                        rules={[
+                            { required: true, message: "Please enter a valid email" },
+                            { type: "email", message: "Please enter a valid email address" }
+                        ]}
                     >
                         <Input prefix={<Mail size={18} />} placeholder="Enter email address" />
                     </Form.Item>
@@ -134,9 +177,11 @@ const UserForm: React.FC<UserFormProps> = ({
                         rules={[{ required: true, message: "Please select a role" }]}
                     >
                         <Select prefix={<Shield size={18} />} placeholder="Select a role">
-                            <Option value="admin">Administrator</Option>
-                            <Option value="manager">Manager</Option>
-                            <Option value="user">Regular User</Option>
+                            {isUserRoles.map((user:UserRolesType) => (
+                                <Option key={user.id} value={user.id}>
+                                    {user.name}
+                                </Option>
+                            ))}
                         </Select>
                     </Form.Item>
                 </Col>
@@ -145,7 +190,7 @@ const UserForm: React.FC<UserFormProps> = ({
                 <Col xs={24}>
                     <Form.Item
                         label="Phone Number"
-                        name="phone"
+                        name="mobileNumber"
                         rules={[
                             { required: true, message: "Please enter your phone number" },
                             {
@@ -184,19 +229,17 @@ const UserForm: React.FC<UserFormProps> = ({
                     </Form.Item>
                 </Col>
             </Row>
-            <Row>
-                <Col xs={24}>
+            <Row className="flex justify-between items-center">
+                <Col xs={24} sm={12}>
                     <Form.Item label="Status" name="status" valuePropName="checked">
                         <Switch checkedChildren="Active" unCheckedChildren="Inactive" defaultChecked
                                 className="custom-switch"
                         />
                     </Form.Item>
                 </Col>
-            </Row>
-            <Row>
-                <Col xs={24}>
+                <Col xs={24} sm={12} className="sm:mt-10">
                     <Form.Item className="flex justify-end">
-                        <Button color="default" variant="solid" htmlType="submit">
+                        <Button loading={isLoading} color="default" variant="solid" htmlType="submit">
                             {isEditing ? "Update User" : "Create User"}
                         </Button>
                     </Form.Item>

@@ -1,5 +1,6 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
+import {SignInResType} from "@/auth/auth-types/AuthTypes.ts";
 
 interface ProtectedRouteProps {
     children: JSX.Element;
@@ -14,10 +15,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
         return <Navigate to="/auth/login" state={{ from: location }} replace />;
     }
 
-    const user = JSON.parse(savedUser);
+    const user:SignInResType = JSON.parse(savedUser);
 
-    if (user.role !== requiredRole) {
-        return <Navigate to={user.role === "admin" ? "/admin" : "/users"} replace />;
+    if (user?.user?.role !== requiredRole) {
+        return <Navigate to={user?.user?.role === "user" ? "/admin" : "/users"} replace />;
     }
 
     return children;

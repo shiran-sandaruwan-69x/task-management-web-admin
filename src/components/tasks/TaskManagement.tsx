@@ -154,8 +154,8 @@ const TaskManagement = () => {
   }, [filteredTasks, currentPage, itemsPerPage]);
 
   useEffect(()=>{
-    setTableLoading(true);
-  },[])
+    getAllTask();
+  },[currentPage,itemsPerPage])
 
   const handleCreateTask = () => {
     setEditingTask(null);
@@ -175,6 +175,11 @@ const TaskManagement = () => {
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
+
+  const getAllTask =()=>{
+    console.log('currentPage',currentPage)
+    console.log('itemsPerPage',itemsPerPage)
+  }
 
   const confirmDelete = () => {
     toggleDeleteModal();

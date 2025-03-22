@@ -5,22 +5,9 @@ import UserManagement from "../users/UserManagement";
 import TaskManagement from "../tasks/TaskManagement";
 import Header from "@/layout/Header.tsx";
 import {CheckSquare, Users} from "lucide-react";
+import {navItemsTypes} from "@/components/common-types/CommonTypes.ts";
 
-interface navItemsTypes {
-    title?:string;
-    icon?:React.ReactElement;
-    path?:string;
-}
-
-interface AdminDashboardProps {
-  user?: {
-    name: string;
-    email: string;
-    avatar?: string;
-  };
-}
-
-const AdminDashboard = ({ user: propUser }: AdminDashboardProps) => {
+const AdminDashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const toggleSidebar = () => {
@@ -42,12 +29,12 @@ const AdminDashboard = ({ user: propUser }: AdminDashboardProps) => {
 
   return (
     <div className="flex h-screen bg-background">
+        {/* Sidebar */}
       <Sidebar collapsed={sidebarCollapsed} onToggleCollapse={toggleSidebar} navItems={navItems}/>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-
         {/* Header */}
-       <Header user={propUser} sidebarCollapsed={sidebarCollapsed} headerText="Admin Dashboard"/>
+       <Header sidebarCollapsed={sidebarCollapsed} headerText="Admin Dashboard"/>
 
         {/* Main content */}
         <main className="flex-1 overflow-y-auto p-6 bg-gray-50">

@@ -2,12 +2,7 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Users, CheckSquare,ArrowLeftToLine,ArrowRightToLine } from "lucide-react";
 import { Layout, Menu } from "antd";
-
-interface navItemsTypes {
-    title?:string;
-    icon?:React.ReactElement;
-    path?:string;
-}
+import {navItemsTypes} from "@/components/common-types/CommonTypes.ts";
 
 interface SidebarProps {
   collapsed?: boolean;
