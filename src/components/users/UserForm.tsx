@@ -5,27 +5,18 @@ import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import axios from "axios";
 import {toast} from "react-toastify";
-import {CreateUserType, UserRolesType} from "@/components/users/user-types/UserTypes.ts";
+import {CreateUserType, UserResType, UserRolesType} from "@/components/users/user-types/UserTypes.ts";
 import {CommonErrorType} from "@/components/common-types/CommonTypes.ts";
-import {createUser} from "@/services/user-services/UserSerives.ts";
+import {createUser, updateUser} from "@/services/user-services/UserSerives.ts";
 
 const { Option } = Select;
-
-interface UserFormValues {
-    name: string;
-    email: string;
-    role: string;
-    phone?: string;
-    address?: string;
-    status?: string;
-}
 
 interface UserFormProps {
     isFormOpen:boolean;
     toggleModal:()=>void;
-    user?: UserFormValues;
+    user?: UserResType;
     isEditing?: boolean;
-    getAllTask:()=>void;
+    getAllTableUsers:()=>void;
 }
 
 const UserForm: React.FC<UserFormProps> = ({
@@ -33,7 +24,7 @@ const UserForm: React.FC<UserFormProps> = ({
                                                toggleModal,
                                                user,
                                                isEditing ,
-                                               getAllTask
+                                               getAllTableUsers
                                            }) => {
     const [form] = Form.useForm();
     const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +37,7 @@ const UserForm: React.FC<UserFormProps> = ({
         { id: "user", name: "User" }
     ];
 
-    // Fetch address suggestions from Google Places API
+    // Fetch address from Google Places API
     const fetchAddressSuggestions = async (query: string) => {
         if (!query) return;
         try {
@@ -77,8 +68,7 @@ const UserForm: React.FC<UserFormProps> = ({
     useEffect(() => {
         if (user) {
             form.setFieldsValue({
-                ...user,
-                status: user.status === "active",
+                ...user
             });
         } else {
             form.resetFields();
@@ -100,27 +90,54 @@ const UserForm: React.FC<UserFormProps> = ({
         form.setFieldsValue({ address: value });
     };
 
-    // create user
+    // create and update user
     const handleSubmit = async (values: CreateUserType) => {
-        try {
-            setIsLoading(true);
-            await createUser(values);
-            getAllTask();
-            toast.success('Created successfully!');
-            form.resetFields();
-            toggleModal();
-        }catch (error){
-            const isErrorResponse = (error: unknown): error is CommonErrorType => {
-                return typeof error === 'object' && error !== null && 'response' in error;
-            };
-            if (isErrorResponse(error) && error.response) {
-                toast.error(error?.response?.data?.message);
-            } else {
-                toast.error('Internal server error');
+        if (user?._id){
+           try {
+               const data:CreateUserType = {
+                   ...values,
+                   userId:user._id ?? null
+               }
+               setIsLoading(true);
+               await updateUser(data);
+               getAllTableUsers();
+               toast.success("User updated successfully!");
+               form.resetFields();
+               toggleModal();
+           }catch (error){
+               const isErrorResponse = (error: unknown): error is CommonErrorType => {
+                   return typeof error === 'object' && error !== null && 'response' in error;
+               };
+               if (isErrorResponse(error) && error.response) {
+                   toast.error(error?.response?.data?.message);
+               } else {
+                   toast.error('Internal server error');
+               }
+           }finally {
+               setIsLoading(false);
+           }
+        }else {
+            try {
+                setIsLoading(true);
+                await createUser(values);
+                getAllTableUsers();
+                toast.success("User created successfully! , An invitation email has been sent to email");
+                form.resetFields();
+                toggleModal();
+            }catch (error){
+                const isErrorResponse = (error: unknown): error is CommonErrorType => {
+                    return typeof error === 'object' && error !== null && 'response' in error;
+                };
+                if (isErrorResponse(error) && error.response) {
+                    toast.error(error?.response?.data?.message);
+                } else {
+                    toast.error('Internal server error');
+                }
+            }finally {
+                setIsLoading(false);
             }
-        }finally {
-            setIsLoading(false);
         }
+
     };
 
 
@@ -239,7 +256,9 @@ const UserForm: React.FC<UserFormProps> = ({
                 </Col>
                 <Col xs={24} sm={12} className="sm:mt-10">
                     <Form.Item className="flex justify-end">
-                        <Button loading={isLoading} color="default" variant="solid" htmlType="submit">
+                        <Button loading={isLoading} color="default" variant="solid" htmlType="submit"
+                                iconPosition="end"
+                        >
                             {isEditing ? "Update User" : "Create User"}
                         </Button>
                     </Form.Item>

@@ -18,7 +18,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
     const user:SignInResType = JSON.parse(savedUser);
 
     if (user?.user?.role !== requiredRole) {
-        return <Navigate to={user?.user?.role === "user" ? "/admin" : "/users"} replace />;
+        return <Navigate to={user?.user?.role === "admin" ? "/admin" : "/users"} replace />;
     }
 
     return children;

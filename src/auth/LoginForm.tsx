@@ -2,10 +2,11 @@ import React, {useEffect, useState} from "react";
 import { EyeInvisibleOutlined, EyeTwoTone, MailOutlined, LockOutlined } from "@ant-design/icons";
 import {Link, useNavigate} from "react-router-dom";
 import {Button, Form, Input, Checkbox, message, Row, Col} from "antd";
-import {SignInApiResType, SignInType} from "@/auth/auth-types/AuthTypes.ts";
+import {SignInApiResType, SignInResType, SignInType} from "@/auth/auth-types/AuthTypes.ts";
 import {signIn} from "@/services/auth-services/AuthServices.ts";
 import {toast} from "react-toastify";
 import {CommonErrorType} from "@/components/common-types/CommonTypes.ts";
+import {axiosApi} from "@/services/axios_instances.ts";
 
 interface LoginFormValues {
   email: string;
@@ -34,25 +35,19 @@ const LoginForm = ({
   const [form] = Form.useForm();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
-  // Simulate checking for existing session on component mount
   useEffect(() => {
     const checkAuth = () => {
-      // In a real app, this would check for a valid token in localStorage or cookies
       const savedUser = localStorage.getItem("user");
       if (savedUser) {
         try {
-          const parsedUser = JSON.parse(savedUser);
-          console.log('parsedUser',parsedUser)
+          const parsedUser:SignInResType = JSON.parse(savedUser);
           setIsAuthenticated(true);
-
-          // Redirect to appropriate dashboard
-          if (parsedUser.role === "admin") {
+          if (parsedUser?.user?.role === "admin") {
             navigate("/admin");
           } else {
             navigate("/users");
           }
         } catch (error) {
-          // Invalid user data in storage
           localStorage.removeItem("user");
           navigate("/auth/login");
         }
@@ -70,9 +65,12 @@ const LoginForm = ({
     try {
       const response:SignInApiResType = await signIn(values);
       toast.success('Login successfully!');
-      if (response?.data?.user?.role === "user"){
-        localStorage.setItem("user", JSON.stringify(response?.data));
+      localStorage.setItem("user", JSON.stringify(response?.data));
+      axiosApi.defaults.headers.common.Authorization = `Bearer ${response?.data?.token}`;
+      if (response?.data?.user?.role === "admin"){
         navigate("/admin");
+      }else {
+        navigate("/users");
       }
     }catch (error){
       const isErrorResponse = (error: unknown): error is CommonErrorType => {
@@ -86,44 +84,6 @@ const LoginForm = ({
     }finally {
       setIsLoading(false);
     }
-
-    // // Simulate API call with timeout
-    // setTimeout(() => {
-    //   // Mock authentication logic
-    //   if (
-    //       values.email === "admin@example.com" &&
-    //       values.password === "password"
-    //   ) {
-    //     // Admin user
-    //     const adminUser = {
-    //       id: "1",
-    //       name: "Admin",
-    //       email: values.email,
-    //       role: "admin",
-    //     };
-    //     localStorage.setItem("user", JSON.stringify(adminUser));
-    //     navigate("/admin");
-    //   } else if (
-    //       values.email === "user@example.com" &&
-    //       values.password === "password"
-    //   ) {
-    //     // Regular user
-    //     const regularUser = {
-    //       id: "2",
-    //       name: "John Doe",
-    //       email: values.email,
-    //       role: "user",
-    //     };
-    //     localStorage.setItem("user", JSON.stringify(regularUser));
-    //     navigate("/users");
-    //   } else {
-    //     // Authentication failed
-    //     message.error(
-    //         "Invalid email or password. Try admin@example.com / password or user@example.com / password",
-    //     );
-    //   }
-    //   setIsLoading(false);
-    // }, 1000);
   };
 
   return (
@@ -176,18 +136,7 @@ const LoginForm = ({
               <Col xs={24}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <input
-                        id="remember-me"
-                        name="remember-me"
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <label
-                        htmlFor="remember-me"
-                        className="ml-2 block text-sm text-gray-600"
-                    >
-                      Remember me
-                    </label>
+
                   </div>
                   <Link
                       to="/auth/forgot-password"

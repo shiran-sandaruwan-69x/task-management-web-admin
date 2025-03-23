@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MailOutlined } from "@ant-design/icons";
 import {Card, Form, Input, Button, message, Row, Col} from "antd";
+import {getOtp} from "@/services/auth-services/AuthServices.ts";
+import {toast} from "react-toastify";
+import {CommonErrorType} from "@/components/common-types/CommonTypes.ts";
 
 const ForgotPasswordForm = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -12,18 +15,18 @@ const ForgotPasswordForm = () => {
     const onFinish = async (values: { email: string }) => {
         setIsSubmitting(true);
         try {
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1500));
-            console.log("Password reset requested for:", values.email);
             setIsSubmitted(true);
-
-            // After 2 seconds, redirect to OTP verification
-            setTimeout(() => {
-                navigate("/auth/verify-otp", { state: { email: values.email } });
-            }, 2000);
+            await getOtp(values.email);
+            navigate("/auth/verify-otp", { state: { email: values.email } });
         } catch (error) {
-            console.error("Error requesting password reset:", error);
-            message.error("Failed to request password reset. Please try again.");
+            const isErrorResponse = (error: unknown): error is CommonErrorType => {
+                return typeof error === 'object' && error !== null && 'response' in error;
+            };
+            if (isErrorResponse(error) && error.response) {
+                toast.error(error?.response?.data?.message);
+            } else {
+                toast.error('Internal server error');
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -35,7 +38,7 @@ const ForgotPasswordForm = () => {
             title="Forgot Password"
         >
             <Card.Meta
-                description="Enter your email address and we'll send you a link to reset your password."
+                description="Enter your email address and we'll send you a OTP to reset your password."
                 className="text-center mb-[24px]"
             />
             {isSubmitted ? (
@@ -75,7 +78,7 @@ const ForgotPasswordForm = () => {
                             loading={isSubmitting}
                             iconPosition="end"
                         >
-                            {isSubmitting ? "Sending..." : "Send Reset Link"}
+                            {isSubmitting ? "Sending..." : "Send Reset OTP"}
                         </Button>
                     </Form.Item>
                         </Col>

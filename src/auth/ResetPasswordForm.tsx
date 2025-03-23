@@ -2,6 +2,10 @@ import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LockOutlined, CheckCircleOutlined, EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
 import { Card, Form, Input, Button, message } from "antd";
+import {resetPassword} from "@/services/auth-services/AuthServices.ts";
+import {ResetPasswordType} from "@/auth/auth-types/AuthTypes.ts";
+import {CommonErrorType} from "@/components/common-types/CommonTypes.ts";
+import {toast} from "react-toastify";
 
 interface ResetPasswordFormProps {
     onSubmit?: (data: { password: string; confirmPassword: string }) => void;
@@ -20,34 +24,37 @@ const ResetPasswordForm = ({
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Check if user came from OTP verification
     const isVerified = location.state?.verified || false;
     const email = location.state?.email || "";
 
-    const handleSubmit = (values: { password: string; confirmPassword: string }) => {
+    const handleSubmit = async (values: { password: string; confirmPassword: string }) => {
         if (onSubmit) {
             onSubmit(values);
             return;
         }
-
-        setIsLoading(true);
-
-        // Simulate API call
-        setTimeout(() => {
-            console.log("Password reset for:", email || "user");
+        try {
+            setIsLoading(true);
+            const data:ResetPasswordType = {
+                email:email,
+                password:values.password,
+            }
+            await resetPassword(data);
+            navigate("/auth/login");
+        }catch (error){
+            const isErrorResponse = (error: unknown): error is CommonErrorType => {
+                return typeof error === 'object' && error !== null && 'response' in error;
+            };
+            if (isErrorResponse(error) && error.response) {
+                toast.error(error?.response?.data?.message);
+            } else {
+                toast.error('Internal server error');
+            }
+        }finally {
             setIsLoading(false);
-            setIsSuccess(true);
-
-            // Redirect to login after 2 seconds
-            setTimeout(() => {
-                navigate("/auth/login");
-            }, 2000);
-        }, 1500);
+        }
     };
 
     if (!isVerified && !token) {
-        // If user didn't come from OTP verification and no token provided,
-        // redirect to forgot password
         setTimeout(() => {
             navigate("/auth/forgot-password");
         }, 0);

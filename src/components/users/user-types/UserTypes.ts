@@ -2,11 +2,11 @@ export type CreateUserType ={
     firstName:string;
     lastName:string;
     email:string;
-    password:string;
     mobileNumber:string;
     role:string;
     address?:string;
-    status:boolean;
+    status?:boolean;
+    userId?:string;
 };
 
 export type UserRolesType={
@@ -28,13 +28,16 @@ export type UserFilteredValuesType ={
 }
 
 export type UserResType ={
-    firstName:string;
-    lastName:string;
-    email:string;
-    password:string;
+    firstName?:string;
+    lastName?:string;
+    email?:string;
     mobileNumber:string;
     role:string;
     address?:string;
-    status:boolean;
+    status?:boolean;
     _id: string,
+};
+
+export type UserResApiType ={
+    data?:UserResType[]
 };

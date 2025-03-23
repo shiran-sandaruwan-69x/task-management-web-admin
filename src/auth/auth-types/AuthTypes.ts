@@ -23,3 +23,13 @@ export type SignInResType ={
 export type SignInApiResType ={
     data?:SignInResType;
 }
+
+export type OtpType ={
+    email?:string;
+    otp?:string;
+};
+
+export type ResetPasswordType ={
+    email?:string;
+    password?:string;
+};

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {Dropdown, Menu, Button, Avatar, MenuProps} from "antd";
 import {LogOut} from "lucide-react";
 import {SignInResType} from "@/auth/auth-types/AuthTypes.ts";
+import {axiosApi} from "@/services/axios_instances.ts";
 interface AdminDashboardProps {
     sidebarCollapsed?: boolean;
     headerText?: string;
@@ -17,12 +18,14 @@ const Header = ({sidebarCollapsed,headerText}: AdminDashboardProps) => {
         const savedUser = localStorage.getItem("user");
         if (savedUser) {
             const parsedUser:SignInResType = JSON.parse(savedUser);
+            axiosApi.defaults.headers.common.Authorization = `Bearer ${parsedUser?.token}`;
             setUser(parsedUser);
         }
     }, []);
 
     const handleLogout = () => {
         localStorage.removeItem("user");
+        axiosApi.defaults.headers.common.Authorization = "";
         navigate("/auth/login");
     };
 

@@ -5,29 +5,26 @@ import UserList from "./UserList";
 import UserForm from "./UserForm";
 import DeleteAlertModal from "@/components/common-comp/DeleteAlertModal.tsx";
 import useDebounce from "@/components/common-comp/useDebounce.tsx";
-import {UserFilteredValuesType, UserRolesType, UserStatusType} from "@/components/users/user-types/UserTypes.ts";
+import {
+  UserFilteredValuesType, UserResApiType,
+  UserResType,
+  UserRolesType,
+  UserStatusType
+} from "@/components/users/user-types/UserTypes.ts";
 import {CommonErrorType} from "@/components/common-types/CommonTypes.ts";
 import {toast} from "react-toastify";
-import {getAllUsers} from "@/services/user-services/UserSerives.ts";
+import {deleteUserById, getAllUsers} from "@/services/user-services/UserSerives.ts";
 
 const { Option } = Select;
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  address?: string;
-  role: string;
-  status: "active" | "inactive";
-}
 
 const UserManagement: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserResType[]>([]);
   const [isTableLoading, setTableLoading] = useState<boolean>(false);
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
   const [isEditFormOpen, setIsEditFormOpen] = useState<boolean>(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [editUser, setEditUser] = useState<UserResType>(null);
+  const [deleteUser, setDeleteUser] = useState<UserResType>(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -49,8 +46,8 @@ const UserManagement: React.FC = () => {
   ];
 
   const isUserStatus:UserRolesType[] = [
-    { id: "true", name: "Admin" },
-    { id: "false", name: "User" }
+    { id: "true", name: "Active" },
+    { id: "false", name: "Inactive" }
   ];
 
   const [filteredValues, setFilteredValues] = useState<UserFilteredValuesType>({
@@ -68,32 +65,47 @@ const UserManagement: React.FC = () => {
   }, [debouncedFilter]);
 
   const handleAddUser = () => {
-    setCurrentUser(null);
     toggleModal();
   };
 
-  const handleEditUser = (user: User) => {
-    setCurrentUser(user);
+  const handleEditUser = (user: UserResType) => {
+    setEditUser(user);
     toggleEditModal();
   };
 
-  const handleDeleteUser = (user: User) => {
-    setCurrentUser(user);
+  const handleDeleteUser = (user: UserResType) => {
+    setDeleteUser(user);
     toggleDeleteModal();
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     toggleDeleteModal();
+    try {
+      const id:string = deleteUser._id ?? null;
+      await deleteUserById(id);
+      getAllTableUsers();
+      toast.success("User deleted successfully!");
+    }catch (error){
+      const isErrorResponse = (error: unknown): error is CommonErrorType => {
+        return typeof error === 'object' && error !== null && 'response' in error;
+      };
+      if (isErrorResponse(error) && error.response) {
+        toast.error(error?.response?.data?.message);
+      } else {
+        toast.error('Internal server error');
+      }
+    }
   };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
-  const getAllTask = async ()=>{
+  const getAllTableUsers = async ()=>{
+    setTableLoading(true);
    try{
-     const response = await getAllUsers(null,null,null,null,null,itemsPerPage,currentPage);
-     console.log('res',response)
+     const response:UserResApiType = await getAllUsers(null,null,null,null,null,itemsPerPage,currentPage);
+     setUsers(response.data);
    }catch (error){
      const isErrorResponse = (error: unknown): error is CommonErrorType => {
        return typeof error === 'object' && error !== null && 'response' in error;
@@ -104,13 +116,14 @@ const UserManagement: React.FC = () => {
        toast.error('Internal server error');
      }
    }finally {
-
+     setTableLoading(false);
    }
   };
 
   const changePageNoOrPageSize = async (filteredValues: UserFilteredValuesType) => {
+    setTableLoading(true);
     try {
-      const response = await getAllUsers(
+      const response:UserResApiType = await getAllUsers(
           filteredValues.firstName,
           filteredValues.role,
           filteredValues.status,
@@ -119,7 +132,7 @@ const UserManagement: React.FC = () => {
           itemsPerPage,
           currentPage
       );
-      console.log('res',response)
+      setUsers(response?.data);
     } catch (error) {
       const isErrorResponse = (error: unknown): error is CommonErrorType => {
         return typeof error === 'object' && error !== null && 'response' in error;
@@ -129,6 +142,8 @@ const UserManagement: React.FC = () => {
       } else {
         toast.error('Internal server error');
       }
+    }finally {
+      setTableLoading(false);
     }
   };
 
@@ -216,10 +231,11 @@ const UserManagement: React.FC = () => {
                   value={searchStatus}
                   allowClear
                   onChange={(value: string) => {
+                    const status:boolean = value === undefined ? null : value === "true" ? true : false;
                     setSearchStatus(value);
                     setFilteredValues({
                       ...filteredValues,
-                      status: value === "true"
+                      status: status
                     });
                   }}
               >
@@ -263,9 +279,9 @@ const UserManagement: React.FC = () => {
             <UserForm
                 isFormOpen={isFormOpen}
                 toggleModal={toggleModal}
-                user={currentUser}
+                user={null}
                 isEditing={false}
-                getAllTask={getAllTask}
+                getAllTableUsers={getAllTableUsers}
             />
         )}
 
@@ -273,9 +289,9 @@ const UserManagement: React.FC = () => {
             <UserForm
                 isFormOpen={isEditFormOpen}
                 toggleModal={toggleEditModal}
-                user={currentUser}
+                user={editUser}
                 isEditing
-                getAllTask={getAllTask}
+                getAllTableUsers={getAllTableUsers}
             />
         )}
 

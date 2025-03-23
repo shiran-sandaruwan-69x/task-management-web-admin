@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {Card, Form, Input, Button, message, Row, Col} from "antd";
+import {getOtp, verifyOtp} from "@/services/auth-services/AuthServices.ts";
+import {CommonErrorType} from "@/components/common-types/CommonTypes.ts";
+import {toast} from "react-toastify";
+import {OtpType} from "@/auth/auth-types/AuthTypes.ts";
 
 interface OTPVerificationFormProps {
     email?: string;
@@ -22,11 +26,9 @@ const OTPVerificationForm = ({
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Get email from location state if available
-    const email = propEmail || location.state?.email || "user@example.com";
+    const email = propEmail || location.state?.email || "";
 
     useEffect(() => {
-        // Start countdown when component mounts
         setResendDisabled(true);
         setCountdown(30);
 
@@ -44,47 +46,56 @@ const OTPVerificationForm = ({
         return () => clearInterval(timer);
     }, []);
 
-    const handleResend = () => {
-        if (onResend) {
-            onResend();
-        } else {
-            // Mock resend functionality
-            console.log("Resending OTP to", email);
+    const handleResend = async () => {
+        try {
+            setResendDisabled(true);
+            await getOtp(email);
+            setCountdown(30);
+
+            const timer = setInterval(() => {
+                setCountdown((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        setResendDisabled(false);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }catch (error){
+            const isErrorResponse = (error: unknown): error is CommonErrorType => {
+                return typeof error === 'object' && error !== null && 'response' in error;
+            };
+            if (isErrorResponse(error) && error.response) {
+                toast.error(error?.response?.data?.message);
+            } else {
+                toast.error('Internal server error');
+            }
         }
-
-        setResendDisabled(true);
-        setCountdown(30);
-
-        const timer = setInterval(() => {
-            setCountdown((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    setResendDisabled(false);
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
     };
 
-    const onFinish = (values: { otp: string }) => {
+    const onFinish = async (values: { otp: string }) => {
         if (onVerify) {
             onVerify(values.otp);
             return;
         }
-
-        // Mock verification
-        setIsLoading(true);
-        setTimeout(() => {
-            // For demo purposes, any 6-digit code is valid
-            if (values.otp.length === 6) {
-                // Redirect to reset password page
-                navigate("/auth/reset-password", { state: { email, verified: true } });
-            } else {
-                form.setFields([{ name: "otp", errors: ["Invalid verification code"] }]);
+        try {
+            const data:OtpType = {
+                email:email,
+                otp:values.otp
             }
-            setIsLoading(false);
-        }, 1500);
+            await verifyOtp(data);
+            navigate("/auth/reset-password", { state: { email, verified: true }});
+        }catch (error){
+            const isErrorResponse = (error: unknown): error is CommonErrorType => {
+                return typeof error === 'object' && error !== null && 'response' in error;
+            };
+            if (isErrorResponse(error) && error.response) {
+                toast.error(error?.response?.data?.message);
+            } else {
+                toast.error('Internal server error');
+            }
+        }
     };
 
     return (

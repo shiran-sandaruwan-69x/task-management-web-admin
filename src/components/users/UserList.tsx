@@ -16,18 +16,24 @@ const UserList: React.FC<UserListProps> = ({
                                                isLoading
                                            }) => {
   const columns = [
-    { title: "Name", dataIndex: "name", key: "name" },
+    { title: "First Name", dataIndex: "firstName", key: "firstName" },
+    { title: "Last Name", dataIndex: "lastName", key: "lastName" },
     { title: "Email", dataIndex: "email", key: "email" },
     { title: "Role", dataIndex: "role", key: "role" },
-      { title: "Status", dataIndex: "status", key: "status",render:(record: UserResType)=>(
+      {
+          title: "Status",
+          dataIndex: "status",
+          key: "status",
+          render: (status: boolean) => (
               <span
                   className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      record.status === true ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+                      status ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
                   }`}
               >
-          {record.status === true ? "Active" : "Inactive"}
+          {status ? "Active" : "Inactive"}
         </span>
-          ) },
+          )
+      },
     {
       title: "Actions",
       key: "actions",
@@ -45,7 +51,7 @@ const UserList: React.FC<UserListProps> = ({
         <Table
             dataSource={users}
             columns={columns}
-            rowKey="id"
+            rowKey="_id"
             pagination={false}
             loading={isLoading}
         />

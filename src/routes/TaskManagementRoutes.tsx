@@ -30,7 +30,7 @@ function TaskManagementRoutes() {
             <Route
                 path="/admin/*"
                 element={
-                    <ProtectedRoute requiredRole="user">
+                    <ProtectedRoute requiredRole="admin">
                         <AdminDashboard />
                     </ProtectedRoute>
                 }
@@ -38,7 +38,7 @@ function TaskManagementRoutes() {
             <Route
                 path="/users/*"
                 element={
-                    <ProtectedRoute requiredRole="admin">
+                    <ProtectedRoute requiredRole="user">
                         <UserTaskManagement />
                     </ProtectedRoute>
                 }

@@ -2,31 +2,24 @@ import React, {useEffect, useState} from "react";
 import {Form, Input, Select, Button, Switch, Row, Col, DatePicker, Modal} from "antd";
 import { CalendarOutlined } from "@ant-design/icons";
 import moment from "moment";
-import {TaskFormValuesType} from "@/components/tasks/task-types/TaskTypes.ts";
+import {
+    DropDownValuesApiType,
+    DropDownValuesType,
+    TaskFormValuesType,
+    TaskResType, TaskResValuesType
+} from "@/components/tasks/task-types/TaskTypes.ts";
 import {toast} from "react-toastify";
 import {CommonErrorType} from "@/components/common-types/CommonTypes.ts";
-import {createTask} from "@/services/task-services/TaskServices.ts";
+import {createTask, updateTask} from "@/services/task-services/TaskServices.ts";
+import {getAllUserNames} from "@/services/user-services/UserSerives.ts";
 const { Option } = Select;
 const { TextArea } = Input;
 
-interface Task {
-    id: string;
-    title: string;
-    assignee: {
-        id: string;
-        name: string;
-        email: string;
-    };
-    startDate: string;
-    endDate: string;
-    description: string;
-    status: string;
-}
 interface TaskFormProps {
     isFormOpen:boolean;
     toggleModal:()=>void;
     isEditing?: boolean;
-    task:Task;
+    task:TaskResValuesType;
     getAllTasks:()=>void;
 }
 const TaskForm: React.FC<TaskFormProps> = ({
@@ -38,12 +31,15 @@ const TaskForm: React.FC<TaskFormProps> = ({
                                            }) => {
     const [form] = Form.useForm();
     const [isLoading, setIsLoading] = useState(false);
+    const [isDropDown, setIsDropDown] = useState<DropDownValuesType[]>([]);
 
     useEffect(() => {
         if (task) {
             form.setFieldsValue({
                 ...task,
-                status: task.status === "active",
+                assignUser:task?.assignUser?._id ? task?.assignUser?._id : '',
+                startDate: task.startDate ? moment(task.startDate, "YYYY-MM-DD") : null,
+                endDate: task.endDate ? moment(task.endDate, "YYYY-MM-DD") : null,
             });
         } else {
             form.resetFields();
@@ -53,21 +49,14 @@ const TaskForm: React.FC<TaskFormProps> = ({
         }
     }, [task, form]);
 
-    const handleSubmit = async (values: TaskFormValuesType) => {
-        const formattedValues:TaskFormValuesType = {
-            ...values,
-            description:values.description ?? null,
-            assignUser:values.assignUser ?? null,
-            startDate: values.startDate ? moment(values.startDate).format("YYYY-MM-DD") : null,
-            endDate: values.endDate ? moment(values.endDate).format("YYYY-MM-DD") : null,
-        };
+    useEffect(()=>{
+        getAllUsersDropDown();
+    },[])
+
+    const getAllUsersDropDown = async ()=>{
         try {
-            setIsLoading(true);
-            await createTask(formattedValues);
-            getAllTasks();
-            toast.success('Created successfully!');
-            form.resetFields();
-            toggleModal();
+            const response:DropDownValuesApiType = await getAllUserNames();
+            setIsDropDown(response.data);
         }catch (error){
             const isErrorResponse = (error: unknown): error is CommonErrorType => {
                 return typeof error === 'object' && error !== null && 'response' in error;
@@ -77,17 +66,60 @@ const TaskForm: React.FC<TaskFormProps> = ({
             } else {
                 toast.error('Internal server error');
             }
-        }finally {
-            setIsLoading(false);
+        }
+    }
+
+    // create and update task
+    const handleSubmit = async (values: TaskFormValuesType) => {
+        const formattedValues: TaskFormValuesType = {
+            ...values,
+            description: values.description ?? null,
+            assignUser: values.assignUser ?? null,
+            startDate: values.startDate ? moment(values.startDate.toDate()).format("YYYY-MM-DD") : null,
+            endDate: values.endDate ? moment(values.endDate.toDate()).format("YYYY-MM-DD") : null,
+        };
+        if (task?._id) {
+            try {
+                setIsLoading(true);
+                await updateTask(task._id,formattedValues);
+                getAllTasks();
+                toast.success('Updated successfully!');
+                form.resetFields();
+                toggleModal();
+            }catch (error){
+                const isErrorResponse = (error: unknown): error is CommonErrorType => {
+                    return typeof error === 'object' && error !== null && 'response' in error;
+                };
+                if (isErrorResponse(error) && error.response) {
+                    toast.error(error?.response?.data?.message);
+                } else {
+                    toast.error('Internal server error');
+                }
+            }finally {
+                setIsLoading(false);
+            }
+        }else {
+            try {
+                setIsLoading(true);
+                await createTask(formattedValues);
+                getAllTasks();
+                toast.success('Created successfully!');
+                form.resetFields();
+                toggleModal();
+            }catch (error){
+                const isErrorResponse = (error: unknown): error is CommonErrorType => {
+                    return typeof error === 'object' && error !== null && 'response' in error;
+                };
+                if (isErrorResponse(error) && error.response) {
+                    toast.error(error?.response?.data?.message);
+                } else {
+                    toast.error('Internal server error');
+                }
+            }finally {
+                setIsLoading(false);
+            }
         }
     };
-
-    const users = [
-        { id: "1", name: "John Doe" },
-        { id: "2", name: "Jane Smith" },
-        { id: "3", name: "Robert Johnson" },
-        { id: "4", name: "Emily Davis" },
-    ];
 
     return (
         <Modal
@@ -133,9 +165,9 @@ const TaskForm: React.FC<TaskFormProps> = ({
                             rules={[]}
                         >
                             <Select placeholder="Select a user to assign">
-                                {users.map((user) => (
-                                    <Option key={user.id} value={user.id}>
-                                        {user.name}
+                                {isDropDown.map((user) => (
+                                    <Option key={user._id} value={user._id}>
+                                        {`${user?.firstName} ${user?.lastName}`}
                                     </Option>
                                 ))}
                             </Select>
