@@ -82,11 +82,6 @@ module.exports = {
                     requiredVersion: dependencies["react-router-dom"],
                     eager: true
                 },
-                "tempo-devtools": {
-                    singleton: true,
-                    requiredVersion: dependencies["tempo-devtools"],
-                    eager: true
-                },
                 "antd": {
                     singleton: true,
                     requiredVersion: dependencies["antd"],
