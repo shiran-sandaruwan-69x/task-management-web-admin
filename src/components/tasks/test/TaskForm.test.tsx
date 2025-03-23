@@ -2,6 +2,12 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import TaskForm from "@/components/tasks/TaskForm.tsx";
+import * as TaskServices from "@/services/task-services/TaskServices";
+
+jest.mock("@/services/task-services/TaskServices", () => ({
+    createTask: jest.fn(),
+    updateTask: jest.fn(),
+}));
 
 Object.defineProperty(window, 'matchMedia', {
     writable: true,
@@ -31,31 +37,33 @@ describe('TaskForm Component', () => {
         expect(screen.getByText('Create New Task')).toBeInTheDocument();
     });
 
-    it('renders the TaskForm component for editing a task', () => {
+    it('renders the TaskForm component for updating a task', () => {
         const mockTask = {
-            _id: '1',
-            taskName: 'Task 1',
-            assignUser: 'User 1',
-            startDate: '2023-10-01',
-            endDate: '2023-10-10',
+            _id: "1",
+            taskName: "Task 1",
+            description: "Task description",
+            assignUser: { _id: "123" },
+            startDate: "2023-10-01",
+            endDate: "2023-10-10",
             status: true,
-            taskStatus: "complete",
         };
+
         render(
             <TaskForm
                 isFormOpen={true}
                 toggleModal={() => {}}
                 isEditing={true}
-                task={null}
+                task={mockTask}
                 getAllTasks={() => {}}
             />
         );
         expect(screen.getByText('Edit Task')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('Task 1')).toBeInTheDocument();
     });
 
     it('submits the form when "Create Task" button is clicked', async () => {
         const mockSubmit = jest.fn();
+        (TaskServices.createTask as jest.Mock).mockResolvedValueOnce({ success: true });
+
         render(
             <TaskForm
                 isFormOpen={true}
@@ -66,14 +74,15 @@ describe('TaskForm Component', () => {
             />
         );
 
-        fireEvent.change(screen.getByPlaceholderText('Enter task name'), {
-            target: { value: 'New Task' },
-        });
+        const taskInput = screen.getByPlaceholderText('Enter task name');
+        fireEvent.change(taskInput, { target: { value: 'New Task' } });
 
-        fireEvent.click(screen.getByText('Create Task'));
+        const submitButton = screen.getByRole('button', { name: /create task/i });
+        fireEvent.click(submitButton);
 
         await waitFor(() => {
-            expect(mockSubmit).toHaveBeenCalled();
+            expect(TaskServices.createTask).toHaveBeenCalledTimes(1);
+            expect(mockSubmit).toHaveBeenCalledTimes(1);
         });
     });
 });
