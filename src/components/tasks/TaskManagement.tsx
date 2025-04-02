@@ -165,7 +165,7 @@ const TaskManagement: React.FC  = () => {
             <Col xs={12} md={8} lg={5} xl={3}>
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                  placeholder="first Name"
+                  placeholder="Task Name"
                   value={searchTaskName}
                   onChange={(e) => {
                     setTaskName(e.target.value)
@@ -179,7 +179,7 @@ const TaskManagement: React.FC  = () => {
             <Col xs={12} md={8} lg={5} xl={3}>
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                  placeholder="First Name"
+                  placeholder="Assignee Name"
                   value={searchUserName}
                   onChange={(e) => {
                     setUserName(e.target.value)
